@@ -1,0 +1,341 @@
+<html>
+<head>
+    <base href="/">
+    <html lang='es-ES'>
+    <link rel="shortcut icon" type="image/x-icon" href="/resources/img/favicon.ico"/>
+    <link rel="icon" type="image/png" sizes="32x32" href="/resources/img/favicon-32x32.png"/>
+    <link rel="icon" type="image/png" sizes="16x16" href="/resources/img/favicon-16x16.png"/>
+    <title>🆕​ CCH IT Spain Department Tool 🆕​</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #0a0a1a;
+            color: #e0e0ff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(20, 20, 40, 0.8);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 0 20px rgba(0, 200, 255, 0.3);
+            max-width: 900px;
+            width: 100%;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #0071a3;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        h3 {
+            text-align: center;
+            color: #f9b112;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        h1 { font-size: 2.5rem; }
+        h2 { font-size: 2rem; }
+        h3 { font-size: 1.5rem; }
+        .upload-area {
+            border: 2px dashed #f9b112;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            background: rgba(249, 177, 18, 0.1);
+        }
+        #fileInput {
+            display: none;
+        }
+        label, button {
+            cursor: pointer;
+            background: #0071a3;
+            color: #0a0a1a;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 1rem;
+        }
+        label:hover, button:hover {
+            background: #00cccc;
+        }
+        #resultArea {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 2rem;
+        }
+        .neon-line {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #0071a3, transparent);
+            margin: 2rem 0;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 10px rgba(0, 255, 255, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.8); }
+            100% { box-shadow: 0 0 10px rgba(0, 255, 255, 0.5); }
+        }
+        .container {
+            animation: pulse 3s infinite;
+        }
+        #rowSelector {
+            background-color: #1a1a3a;
+            color: #0071a3;
+            border: 1px solid #0071a3;
+            padding: 0.5rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            width: 100%;
+        }
+        #analysisResult {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        .result-section {
+            margin-bottom: 1.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 5px;
+        }
+        .result-section h4 {
+            color: #ff00ff;
+            margin-top: 0;
+        }
+        .result-content {
+            margin-bottom: 0.5rem;
+            word-wrap: break-word;
+        }
+        .copy-btn {
+            margin-top: 0.5rem;
+            transition: background-color 0.3s ease;
+        }
+        .mode-selector {
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .mode-selector select {
+            background-color: #1a1a3a;
+            color: #0071a3;
+            border: 1px solid #0071a3;
+            padding: 0.5rem;
+            border-radius: 5px;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background-color: rgba(20, 20, 40, 0.8);
+            color: #00ffff;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            font-size: 0.9rem;
+            box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.2);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            padding: 0.5rem;
+            text-align: left;
+            border: 1px solid #0071a3;
+        }
+        th {
+            background-color: #0071a3;
+            color: #fff;
+        }
+        tr:hover {
+            background-color: rgba(249, 177, 18, 0.1);
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <center><img src="/resources/img/logoCCH.png" alt="CCH IT Department" width="200" height="200"></center>
+    <h1>🛳️​CCH IT Spain Department Tool🛳️​​</h1>
+    <h3>Advanced New Starters File Analyzer</h3>
+    <div class="mode-selector">
+        <label for="modeSelector">✅​ Select Step:</label>
+        <select id="modeSelector" onchange="changeMode()">
+            <option value="step2">Step 2 - TTG/B2E</option>
+            <option value="step3">Step 3 - Genesys</option>
+            <option value="step4">Step 4 - D365 Excel</option> <!-- Opción añadida -->
+        </select>
+    </div>
+    <div class="upload-area">
+        <input type="file" id="fileInput" accept=".xlsx" />
+        <label for="fileInput">Upload Hiring and Credentials File</label>
+    </div>
+    <div class="neon-line"></div>
+    <div id="resultArea">
+        ⬇️​​ Results will appear here... ⬇️​
+    </div>
+</div>
+
+<script>
+let currentMode = 'step2';
+
+document.getElementById('fileInput').addEventListener('change', handleFile, false);
+
+function changeMode() {
+    currentMode = document.getElementById('modeSelector').value;
+    if (window.fullData) {
+        processData(window.fullData);
+    }
+}
+
+function handleFile(e) {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+        
+        processData(jsonData);
+    };
+    
+    reader.readAsArrayBuffer(file);
+}
+
+function processData(data) {
+    window.fullData = data;
+    if (currentMode === 'step2') {
+        processStep2Data(data);
+    } else if (currentMode === 'step3') {
+        processStep3Data(data);
+    } else {
+        processStep4Data(data); // Procesar datos para Step 4
+    }
+}
+
+function processStep2Data(data) {
+    let resultHTML = '<h2>Select a row to see results:</h2>';
+    resultHTML += '<select id="rowSelector" onchange="showStep2Result()">';
+    resultHTML += '<option value="">Choose a row</option>';
+    
+    for (let i = 1; i < data.length; i++) {
+        if (data[i][0] !== undefined && data[i][1] !== undefined) {
+            resultHTML += `<option value="${i}">${data[i][0]} - ${data[i][1]}</option>`;
+        }
+    }
+    
+    resultHTML += '</select>';
+    resultHTML += '<div id="analysisResult"></div>';
+    
+    document.getElementById('resultArea').innerHTML = resultHTML;
+}
+
+function showStep2Result() {
+    const selectedRow = document.getElementById('rowSelector').value;
+    if (!selectedRow) return;
+    
+    const rowData = window.fullData[selectedRow];
+    const resultDiv = document.getElementById('analysisResult');
+    
+    resultDiv.innerHTML = `<h4>Analysis for: ${rowData[1]} ${rowData[2]}</h4>`;
+}
+
+function processStep3Data(data) {
+    let resultHTML = '<h2>Select a row to see results:</h2>';
+    resultHTML += '<select id="rowSelector" onchange="showStep3Result()">';
+    resultHTML += '<option value="">Choose a row</option>';
+    
+    for (let i = 1; i < data.length; i++) {
+        if (data[i][0] !== undefined && data[i][1] !== undefined) {
+            resultHTML += `<option value="${i}">${data[i][0]} - ${data[i][1]}</option>`;
+        }
+    }
+    
+    resultHTML += '</select>';
+    resultHTML += '<div id="analysisResult"></div>';
+    
+    document.getElementById('resultArea').innerHTML = resultHTML;
+}
+
+function showStep3Result() {
+    const selectedRow = document.getElementById('rowSelector').value;
+    if (!selectedRow) return;
+    
+    const rowData = window.fullData[selectedRow];
+    const windowsUserName = rowData[13]; // Columna N
+    const resultDiv = document.getElementById('analysisResult');
+    
+    resultDiv.innerHTML = `<h4>Analysis for: ${rowData[1]} ${rowData[2]}</h4>`;
+    resultDiv.innerHTML += `<div class="result-content">Windows Username: <strong>${windowsUserName}</strong></div>`;
+}
+
+function processStep4Data(data) {
+    let resultHTML = '<h1>Generar Plantilla Excel 11</h1>';
+    resultHTML += '<form action="/" method="POST" enctype="multipart/form-data">';
+    resultHTML += '<input type="file" name="file" accept=".xlsx">';
+    resultHTML += '<input type="submit" value="Cargar archivo">';
+    resultHTML += '</form>';
+
+    if (data) {
+        resultHTML += '<form action="/process" method="POST">';
+        resultHTML += '<table>';
+        resultHTML += '<thead>';
+        resultHTML += '<tr>';
+        resultHTML += '<th>Seleccionar</th>';
+        resultHTML += '<th>Name</th>';
+        resultHTML += '<th>Surname</th>';
+        resultHTML += '<th>Email</th>';
+        resultHTML += '<th>Market</th>';
+        resultHTML += '<th>Va a ser PCC?</th>';
+        resultHTML += '<th>B2E User Name</th>';
+        resultHTML += '</tr>';
+        resultHTML += '</thead>';
+        resultHTML += '<tbody>';
+        
+        for (let i = 1; i < data.length; i++) {
+            if (data[i][0] !== undefined && data[i][1] !== undefined) {
+                resultHTML += `<tr>`;
+                resultHTML += `<td><input type="checkbox" name="rows" value="${i}"></td>`;
+                resultHTML += `<td>${data[i][0]}</td>`;
+                resultHTML += `<td>${data[i][1]}</td>`;
+                resultHTML += `<td>${data[i][2]}</td>`;
+                resultHTML += `<td>${data[i][3]}</td>`;
+                resultHTML += `<td>${data[i][4]}</td>`;
+                resultHTML += `<td>${data[i][5]}</td>`;
+                resultHTML += `</tr>`;
+            }
+        }
+
+        resultHTML += '</tbody>';
+        resultHTML += '</table>';
+        resultHTML += '<input type="submit" value="Generar Plantilla">';
+        resultHTML += '</form>';
+    }
+
+    document.getElementById('resultArea').innerHTML = resultHTML;
+}
+
+</script>
+
+<div class="footer">
+    © 2024 CCH IT Department. All rights reserved.
+</div>
+</body>
+</html>
