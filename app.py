@@ -1,17 +1,16 @@
-from flask import Flask, request, render_template, send_file
+from flask import Flask, render_template, request, send_file
 import pandas as pd
 import openpyxl
 from werkzeug.utils import secure_filename
 import os
+import tempfile
+from datetime import datetime
 
 app = Flask(__name__)
-UPLOAD_FOLDER = 'uploads'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        # Subir el archivo
         if 'file' not in request.files:
             return 'No file part'
         file = request.files['file']
@@ -19,102 +18,67 @@ def index():
             return 'No selected file'
         if file:
             filename = secure_filename(file.filename)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                file_path = temp_file.name
+                file.save(file_path)
 
-            # Leer archivo subido
-            df = pd.read_excel(file_path)
+            df = pd.read_excel(file_path, header=1)
+            global last_data
+            last_data = df[['Name', 'Surname', 'E-mail', 'Market', 'Va a ser PCC?', 'B2E User Name']].tail(25)
+            data = last_data.to_dict(orient='records')
 
-            # Crear una lista de checkboxes con Name y Surname
-            names = df[['Name', 'Surname']].dropna()
-            return render_template('index.html', names=names.values)
-
-    return render_template('index.html')
+            return render_template('base.html', data=data)
+    
+    return render_template('base.html', data=None)
 
 @app.route('/process', methods=['POST'])
 def process():
     selected_rows = request.form.getlist('rows')
+    selected_indices = [int(row) for row in selected_rows]
 
-    # Cargar archivo subido previamente
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], os.listdir(app.config['UPLOAD_FOLDER'])[0])
-    df = pd.read_excel(file_path)
+    if any(idx < 0 or idx >= len(last_data) for idx in selected_indices):
+        return "Índice seleccionado está fuera de rango.", 400
 
-    # Cargar la plantilla 'PlantillaSTEP4.xlsx'
     plantilla = 'PlantillaSTEP4.xlsx'
     wb = openpyxl.load_workbook(plantilla)
     ws = wb.active
 
-    # Procesar las filas seleccionadas
-    for row in selected_rows:
-        idx = int(row)  # Convertir el índice de string a entero
+    destination_row = 7
+    for idx in selected_indices:
+        name = last_data.iloc[idx]['Name']
+        surname = last_data.iloc[idx]['Surname']
+        email = last_data.iloc[idx]['E-mail']
+        market = last_data.iloc[idx]['Market']
+        pcc_status = last_data.iloc[idx]['Va a ser PCC?']
+        b2e_username = last_data.iloc[idx]['B2E User Name']
 
-        name = df.iloc[idx, df.columns.get_loc('Name')]
-        surname = df.iloc[idx, df.columns.get_loc('Surname')]
-        email = df.iloc[idx, df.columns.get_loc('E-mail')]
-        market = df.iloc[idx, df.columns.get_loc('Market')]
-        pcc_status = df.iloc[idx, df.columns.get_loc('Va a ser PCC?')]
-        b2e_username = df.iloc[idx, df.columns.get_loc('B2E User Name')]
+        ws[f'C{destination_row}'] = name
+        ws[f'D{destination_row}'] = surname
+        ws[f'E{destination_row}'] = email
 
-        # Escribir los datos en las columnas correspondientes de la plantilla
-        row_num = 7 + idx  # Empezando desde la fila 7 en la plantilla
-        ws[f'C{row_num}'] = name
-        ws[f'D{row_num}'] = surname
-        ws[f'E{row_num}'] = email
-
-        # Condiciones para "Primary phone"
-        if pcc_status == 'Y' and market == 'DACH':
-            ws[f'F{row_num}'] = "/+4940210918145 /+43122709858 /+41445295828"
-        elif pcc_status == 'Y' and market == 'France':
-            ws[f'F{row_num}'] = "/+33180037979"
-        elif pcc_status == 'Y' and market == 'Spain':
-            ws[f'F{row_num}'] = "/+34932952130"
-        elif pcc_status == 'Y' and market == 'Italy':
-            ws[f'F{row_num}'] = "/+390109997099"
-
-        # Condiciones para "Workgroup"
-        if pcc_status == 'Y' and market == 'DACH':
-            ws[f'G{row_num}'] = "D_PCC"
-        elif pcc_status == 'Y' and market == 'France':
-            ws[f'G{row_num}'] = "F_PCC"
-        elif pcc_status == 'Y' and market == 'Spain':
-            ws[f'G{row_num}'] = "E_PCC"
-        elif pcc_status == 'Y' and market == 'Italy':
-            ws[f'G{row_num}'] = "I_PCC"
-
-        # Condiciones para "Team"
-        if pcc_status == 'Y' and market == 'DACH':
-            ws[f'H{row_num}'] = "Team_D_CCH_PCC_1"
-        elif pcc_status == 'Y' and market == 'France':
-            ws[f'H{row_num}'] = "Team_F_CCH_PCC_1"
-        elif pcc_status == 'Y' and market == 'Spain':
-            ws[f'H{row_num}'] = "Team_E_CCH_PCC_1"
-        elif pcc_status == 'Y' and market == 'Italy':
-            ws[f'H{row_num}'] = "Team_I_CCH_PCC_1"
-
-        # Condiciones para "Is PCC"
         if pcc_status == 'Y':
-            ws[f'L{row_num}'] = "Y"
+            if market == 'DACH':
+                ws[f'F{destination_row}'] = "/+4940210918145 /+43122709858 /+41445295828"
+            elif market == 'France':
+                ws[f'F{destination_row}'] = "/+33180037979"
+            elif market == 'Spain':
+                ws[f'F{destination_row}'] = "/+34932952130"
+            elif market == 'Italy':
+                ws[f'F{destination_row}'] = "/+390109997099"
         else:
-            ws[f'L{row_num}'] = "N"
+            ws[f'F{destination_row}'] = ""
 
-        # Escribir otros campos
-        ws[f'Q{row_num}'] = b2e_username
-        ws[f'R{row_num}'] = b2e_username
+        ws[f'Q{destination_row}'] = email
+        ws[f'R{destination_row}'] = b2e_username
 
-        # Condiciones para "Campaign Level"
-        if pcc_status in ['Y', 'N', 'DS']:
-            ws[f'V{row_num}'] = "Agent"
-        elif pcc_status == 'TL':
-            ws[f'V{row_num}'] = "Team Leader"
+        destination_row += 1
 
-    # Guardar la plantilla con los datos rellenados
-    output_file = 'PlantillaSTEP4_Rellenada.xlsx'
+    now = datetime.now()
+    formatted_date = now.strftime("%Y%m%d_%H%M")
+    output_file = os.path.join(tempfile.gettempdir(), f'D365_STEP4_CCH_{formatted_date}.xlsx')
     wb.save(output_file)
 
-    # Enviar el archivo descargable
     return send_file(output_file, as_attachment=True)
 
 if __name__ == '__main__':
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
     app.run(debug=True)
