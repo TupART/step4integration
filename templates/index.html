@@ -1,7 +1,7 @@
-<!DOCTYPE html>
-<html lang='es-ES'>
+<html>
 <head>
-    <base href="https://newstarters.vercel.app/">
+    <base href="/">
+    <html lang='es-ES'>
     <link rel="shortcut icon" type="image/x-icon" href="/resources/img/favicon.ico"/>
     <link rel="icon" type="image/png" sizes="32x32" href="/resources/img/favicon-32x32.png"/>
     <link rel="icon" type="image/png" sizes="16x16" href="/resources/img/favicon-16x16.png"/>
@@ -25,7 +25,6 @@
             box-shadow: 0 0 20px rgba(0, 200, 255, 0.3);
             max-width: 900px;
             width: 100%;
-            animation: pulse 3s infinite;
         }
         h1, h2 {
             text-align: center;
@@ -87,6 +86,9 @@
             50% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.8); }
             100% { box-shadow: 0 0 10px rgba(0, 255, 255, 0.5); }
         }
+        .container {
+            animation: pulse 3s infinite;
+        }
         #rowSelector {
             background-color: #1a1a3a;
             color: #0071a3;
@@ -143,14 +145,29 @@
             font-size: 0.9rem;
             box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.2);
         }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            padding: 0.5rem;
+            text-align: left;
+            border: 1px solid #0071a3;
+        }
+        th {
+            background-color: #0071a3;
+            color: #fff;
+        }
+        tr:hover {
+            background-color: rgba(249, 177, 18, 0.1);
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <center>
-            <img src="/resources/img/logoCCH.png" alt="CCH IT Department" width="200" height="200">
-        </center>
+        <center><img src="/resources/img/logoCCH.png" alt="CCH IT Department" width="200" height="200"></center>
         <h1>🛳️​CCH IT Spain Department Tool🛳️​​</h1>
         <h3>Advanced New Starters File Analyzer</h3>
         <div class="mode-selector">
@@ -158,148 +175,110 @@
             <select id="modeSelector" onchange="changeMode()">
                 <option value="step2">Step 2 - TTG/B2E</option>
                 <option value="step3">Step 3 - Genesys</option>
+                <option value="step4">Step 4 - Generar Plantilla Excel</option>
             </select>
         </div>
-        <div class="upload-area">
-            <input type="file" id="fileInput" accept=".xlsx" />
-            <label for="fileInput">Upload Hiring and Credentials File</label>
+    
+        <!-- Contenido para Step 4 -->
+        <div id="step4Content" style="display: none;">
+            <h1>Generar Plantilla Excel 11</h1>
+            <form action="/" method="POST" enctype="multipart/form-data">
+                <input type="file" id="fileInputStep4" name="file" accept=".xlsx">
+                <input type="submit" value="Cargar archivo">
+            </form>
+    
+            <div id="step4ResultArea">
+                <!-- Resultados de Step 4 se mostrarán aquí -->
+            </div>
         </div>
-        <div class="neon-line"></div>
+    
         <div id="resultArea">
-            ⬇️​​ Results will appear here... ⬇️​
+            ⬇️​​ Results will appear here. ⬇️​
         </div>
     </div>
-
+    
     <script>
-        let currentMode = 'step2';
-
-        document.getElementById('fileInput').addEventListener('change', handleFile, false);
-
-        function changeMode() {
-            currentMode = document.getElementById('modeSelector').value;
-            if (window.fullData) {
-                processData(window.fullData);
+    let currentMode = 'step2';
+    
+    document.getElementById('fileInputStep4').addEventListener('change', handleFileStep4, false);
+    
+    function changeMode() {
+        currentMode = document.getElementById('modeSelector').value;
+        document.getElementById('step4Content').style.display = currentMode === 'step4' ? 'block' : 'none';
+        if (window.fullData) {
+            processData(window.fullData);
+        }
+    }
+    
+    function handleFileStep4(e) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+    
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+            processStep4Data(jsonData);
+        };
+    
+        reader.readAsArrayBuffer(file);
+    }
+    
+    function processStep4Data(data) {
+        window.fullData = data;
+        let resultHTML = '<h2>Select a row to see results:</h2>';
+        resultHTML += '<select id="rowSelectorStep4" onchange="showStep4Result()">';
+        resultHTML += '<option value="">Choose a row</option>';
+    
+        for (let i = 1; i < data.length; i++) {
+            if (data[i][0] !== undefined && data[i][1] !== undefined) {
+                resultHTML += `<option value="${i}">${data[i][0]} - ${data[i][1]}</option>`;
             }
         }
-
-        function handleFile(e) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
-                
-                processData(jsonData);
-            };
-            
-            reader.readAsArrayBuffer(file);
-        }
-
-        function processData(data) {
-            window.fullData = data;
-            if (currentMode === 'step2') {
-                processStep2Data(data);
-            } else {
-                processStep3Data(data);
-            }
-        }
-
-        function processStep2Data(data) {
-            let resultHTML = '<h2>Select a row to see results:</h2>';
-            resultHTML += '<select id="rowSelector" onchange="showStep2Result()">';
-            resultHTML += '<option value="">Choose a row</option>';
-            
-            for (let i = 1; i < data.length; i++) {
-                if (data[i][0] !== undefined && data[i][1] !== undefined) {
-                    resultHTML += `<option value="${i}">${data[i][0]} - ${data[i][1]}</option>`;
-                }
-            }
-            
-            resultHTML += '</select>';
-            resultHTML += '<div id="analysisResult"></div>';
-            
-            document.getElementById('resultArea').innerHTML = resultHTML;
-        }
-
-        function showStep2Result() {
-            const selectedRow = document.getElementById('rowSelector').value;
-            if (!selectedRow) return;
-            
-            const rowData = window.fullData[selectedRow];
-            const windowsUserName = rowData[13]; // Column N
-            const market = rowData[2]; // Column C
-            const os = rowData[3]; // Column D
-            const offices = rowData[4]; // Column E
-
-            let resultHTML = `
-                <h4>Step 2 - TTG/B2E Analysis for ${rowData[0]} ${rowData[1]}</h4>
-                <div class="result-section">
-                    <div class="result-content"><strong>Windows Username:</strong> ${windowsUserName}</div>
-                    <div class="result-content"><strong>Market:</strong> ${market}</div>
-                    <div class="result-content"><strong>Operating System:</strong> ${os}</div>
-                    <div class="result-content"><strong>Offices:</strong> ${offices}</div>
-                    <button class="copy-btn" onclick="copyToClipboard('${windowsUserName}')">Copy Username</button>
-                </div>
-            `;
-
-            document.getElementById('analysisResult').innerHTML = resultHTML;
-        }
-
-        function processStep3Data(data) {
-            // Similar to Step 2 but for Step 3.
-            let resultHTML = '<h2>Select a row to see results:</h2>';
-            resultHTML += '<select id="rowSelector" onchange="showStep3Result()">';
-            resultHTML += '<option value="">Choose a row</option>';
-            
-            for (let i = 1; i < data.length; i++) {
-                if (data[i][0] !== undefined && data[i][1] !== undefined) {
-                    resultHTML += `<option value="${i}">${data[i][0]} - ${data[i][1]}</option>`;
-                }
-            }
-            
-            resultHTML += '</select>';
-            resultHTML += '<div id="analysisResult"></div>';
-            
-            document.getElementById('resultArea').innerHTML = resultHTML;
-        }
-
-        function showStep3Result() {
-            const selectedRow = document.getElementById('rowSelector').value;
-            if (!selectedRow) return;
-
-            const rowData = window.fullData[selectedRow];
-            const windowsUserName = rowData[13]; // Column N
-            const email = rowData[5]; // Column F
-            const team = rowData[6]; // Column G
-
-            let resultHTML = `
-                <h4>Step 3 - Genesys Analysis for ${rowData[0]} ${rowData[1]}</h4>
-                <div class="result-section">
-                    <div class="result-content"><strong>Windows Username:</strong> ${windowsUserName}</div>
-                    <div class="result-content"><strong>Email:</strong> ${email}</div>
-                    <div class="result-content"><strong>Team:</strong> ${team}</div>
-                    <button class="copy-btn" onclick="copyToClipboard('${windowsUserName}')">Copy Username</button>
-                </div>
-            `;
-
-            document.getElementById('analysisResult').innerHTML = resultHTML;
-        }
-
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text)
-                .then(() => alert('Copied to clipboard!'))
-                .catch(err => alert('Error copying text: ', err));
-        }
+    
+        resultHTML += '</select>';
+        resultHTML += '<div id="step4AnalysisResult"></div>';
+    
+        document.getElementById('step4ResultArea').innerHTML = resultHTML;
+    }
+    
+    function showStep4Result() {
+        const selectedRow = document.getElementById('rowSelectorStep4').value;
+        if (!selectedRow) return;
+    
+        const rowData = window.fullData[selectedRow];
+        const name = rowData[0];
+        const surname = rowData[1];
+        const email = rowData[2];
+        const market = rowData[3];
+    
+        let result = `
+            <div class="result-section">
+                <h4>Name</h4>
+                <div class="result-content">${name}</div>
+            </div>
+            <div class="result-section">
+                <h4>Surname</h4>
+                <div class="result-content">${surname}</div>
+            </div>
+            <div class="result-section">
+                <h4>Email</h4>
+                <div class="result-content">${email}</div>
+            </div>
+            <div class="result-section">
+                <h4>Market</h4>
+                <div class="result-content">${market}</div>
+            </div>
+        `;
+    
+        document.getElementById('step4AnalysisResult').innerHTML = result;
+    }
     </script>
-
+    
     <footer class="footer">
-        <p>🔄​ Last Updated: 2024</p>
+        Developed by Jeremy López Ⓒ <script>document.write(new Date().getUTCFullYear());</script>
     </footer>
-</body>
-</html>
+    </body>
+    </html>
